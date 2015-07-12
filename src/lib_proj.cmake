@@ -5,34 +5,35 @@ colormsg(_HIBLUE_ "Configuring proj library:")
 message(STATUS "")
 
 # default config, shared on unix and static on Windows
-if(UNIX)
-    set(BUILD_LIBPROJ_SHARED_DEFAULT ON )
-endif(UNIX)
-if( WIN32)
-    set(BUILD_LIBPROJ_SHARED_DEFAULT OFF)
-endif(WIN32)
-option(BUILD_LIBPROJ_SHARED "Build libproj library shared." ${BUILD_LIBPROJ_SHARED_DEFAULT})
-if(BUILD_LIBPROJ_SHARED)
+#if(UNIX)
+#    set(BUILD_LIBPROJ_SHARED_DEFAULT ON )
+#endif(UNIX)
+#if( WIN32)
+#    set(BUILD_LIBPROJ_SHARED_DEFAULT OFF)
+#endif(WIN32)
+#option(BUILD_LIBPROJ_SHARED "Build libproj library shared." ${BUILD_LIBPROJ_SHARED_DEFAULT})
+if(BUILD_SHARED_LIBS)
   set(PROJ_LIBRARY_TYPE SHARED)
 else(BUILD_LIBPROJ_SHARED)
   set(PROJ_LIBRARY_TYPE STATIC)
-endif(BUILD_LIBPROJ_SHARED)
+endif()
 
 
-option(USE_THREAD "Build libproj with thread/mutex support " ON)
+#option(USE_THREAD "Build libproj with thread/mutex support " ON)
+set(USE_THREAD OFF)
 if(NOT USE_THREAD)
    add_definitions( -DMUTEX_stub)
 endif(NOT USE_THREAD)
-find_package(Threads QUIET)
-if(USE_THREAD AND Threads_FOUND AND CMAKE_USE_WIN32_THREADS_INIT )
-   add_definitions( -DMUTEX_win32)
-endif(USE_THREAD AND Threads_FOUND AND CMAKE_USE_WIN32_THREADS_INIT )
-if(USE_THREAD AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT )
-   add_definitions( -DMUTEX_pthread)
-endif(USE_THREAD AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT )
-if(USE_THREAD AND NOT Threads_FOUND)
-  message(FATAL_ERROR "No thread library found and thread/mutex support is required by USE_THREAD option")
-endif(USE_THREAD AND NOT Threads_FOUND)
+#find_package(Threads QUIET)
+#if(USE_THREAD AND Threads_FOUND AND CMAKE_USE_WIN32_THREADS_INIT )
+#   add_definitions( -DMUTEX_win32)
+#endif(USE_THREAD AND Threads_FOUND AND CMAKE_USE_WIN32_THREADS_INIT )
+#if(USE_THREAD AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT )
+#   add_definitions( -DMUTEX_pthread)
+#endif(USE_THREAD AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT )
+#if(USE_THREAD AND NOT Threads_FOUND)
+#  message(FATAL_ERROR "No thread library found and thread/mutex support is required by USE_THREAD option")
+#endif(USE_THREAD AND NOT Threads_FOUND)
 
 
 ##############################################
@@ -219,28 +220,28 @@ source_group("CMake Files" FILES CMakeLists.txt)
 
 
 # Embed PROJ_LIB data files location
-add_definitions(-DPROJ_LIB="${CMAKE_INSTALL_PREFIX}/${DATADIR}")
+#add_definitions(-DPROJ_LIB="${CMAKE_INSTALL_PREFIX}/${DATADIR}")
 
 #################################################
 ## java wrapping with jni
 #################################################
-option(JNI_SUPPORT "Build support of java/jni wrapping for proj library" OFF)
-find_package(JNI QUIET)
-if(JNI_SUPPORT AND NOT JNI_FOUND)
-  message(FATAL_ERROR "jni support is required but jni is not found")
-endif(JNI_SUPPORT AND NOT JNI_FOUND)
-boost_report_value(JNI_SUPPORT)
-if(JNI_SUPPORT)
-  set(SRC_LIBPROJ_CORE ${SRC_LIBPROJ_CORE}
-                       jniproj.c )
-  set(HEADERS_LIBPROJ ${HEADERS_LIBPROJ}
-                        org_proj4_PJ.h
-                        org_proj4_Projections.h)
-  source_group("Source Files\\JNI" FILES ${SRC_LIBPROJ_JNI})
-  add_definitions(-DJNI_ENABLED)
-  include_directories( ${JNI_INCLUDE_DIRS})
-  boost_report_value(JNI_INCLUDE_DIRS)
-endif(JNI_SUPPORT)
+#option(JNI_SUPPORT "Build support of java/jni wrapping for proj library" OFF)
+#find_package(JNI QUIET)
+#if(JNI_SUPPORT AND NOT JNI_FOUND)
+#  message(FATAL_ERROR "jni support is required but jni is not found")
+#endif(JNI_SUPPORT AND NOT JNI_FOUND)
+#boost_report_value(JNI_SUPPORT)
+#if(JNI_SUPPORT)
+#  set(SRC_LIBPROJ_CORE ${SRC_LIBPROJ_CORE}
+#                       jniproj.c )
+#  set(HEADERS_LIBPROJ ${HEADERS_LIBPROJ}
+#                        org_proj4_PJ.h
+#                        org_proj4_Projections.h)
+#  source_group("Source Files\\JNI" FILES ${SRC_LIBPROJ_JNI})
+#  add_definitions(-DJNI_ENABLED)
+#  include_directories( ${JNI_INCLUDE_DIRS})
+#  boost_report_value(JNI_INCLUDE_DIRS)
+#endif(JNI_SUPPORT)
 
 #################################################
 ## targets: libproj and proj_config.h
@@ -256,75 +257,79 @@ string(TOLOWER "${PROJECT_INTERN_NAME}" PROJECTNAMEL)
 set(PROJ_CORE_TARGET ${PROJECTNAMEL})
 proj_target_output_name(${PROJ_CORE_TARGET} PROJ_CORE_TARGET_OUTPUT_NAME)
 
-add_library( ${PROJ_CORE_TARGET}
-                    ${PROJ_LIBRARY_TYPE}
-                    ${ALL_LIBPROJ_SOURCES}
-                    ${ALL_LIBPROJ_HEADERS}
-                    ${PROJ_RESOURCES}  )
+#add_library( ${PROJ_CORE_TARGET}
+#                    ${PROJ_LIBRARY_TYPE}
+#                    ${ALL_LIBPROJ_SOURCES}
+#                    ${ALL_LIBPROJ_HEADERS}
+#                    ${PROJ_RESOURCES}  )
+yong_add_library(proj
+  LIB_TYPE ${PROJ_LIBRARY_TYPE}
+  SOURCES ${ALL_LIBPROJ_SOURCES} ${ALL_LIBPROJ_HEADERS} ${PROJ_RESOURCES})
 
 
-if(WIN32)
-  set_target_properties(${PROJ_CORE_TARGET}
-    PROPERTIES
-    VERSION "${${PROJECT_INTERN_NAME}_BUILD_VERSION}"
-    OUTPUT_NAME "${PROJ_CORE_TARGET_OUTPUT_NAME}"
-    CLEAN_DIRECT_OUTPUT 1)
-elseif(BUILD_FRAMEWORKS_AND_BUNDLE)
-  set_target_properties(${PROJ_CORE_TARGET}
-    PROPERTIES
-    VERSION "${${PROJECT_INTERN_NAME}_BUILD_VERSION}"
-    INSTALL_NAME_DIR ${PROJ_INSTALL_NAME_DIR}
-    CLEAN_DIRECT_OUTPUT 1)
-else()
-  set_target_properties(${PROJ_CORE_TARGET}
-    PROPERTIES
-    VERSION "${${PROJECT_INTERN_NAME}_BUILD_VERSION}"
-    SOVERSION "${${PROJECT_INTERN_NAME}_API_VERSION}"
-    CLEAN_DIRECT_OUTPUT 1)
-endif()
+#if(WIN32)
+#  set_target_properties(${PROJ_CORE_TARGET}
+#    PROPERTIES
+#    VERSION "${${PROJECT_INTERN_NAME}_BUILD_VERSION}"
+#    OUTPUT_NAME "${PROJ_CORE_TARGET_OUTPUT_NAME}"
+#    CLEAN_DIRECT_OUTPUT 1)
+#elseif(BUILD_FRAMEWORKS_AND_BUNDLE)
+#  set_target_properties(${PROJ_CORE_TARGET}
+#    PROPERTIES
+#    VERSION "${${PROJECT_INTERN_NAME}_BUILD_VERSION}"
+#    INSTALL_NAME_DIR ${PROJ_INSTALL_NAME_DIR}
+#    CLEAN_DIRECT_OUTPUT 1)
+#else()
+#  set_target_properties(${PROJ_CORE_TARGET}
+#    PROPERTIES
+#    VERSION "${${PROJECT_INTERN_NAME}_BUILD_VERSION}"
+#    SOVERSION "${${PROJECT_INTERN_NAME}_API_VERSION}"
+#    CLEAN_DIRECT_OUTPUT 1)
+#endif()
 
-set_target_properties(${PROJ_CORE_TARGET}
+set_target_properties(proj
     PROPERTIES
     LINKER_LANGUAGE C)
 
 ##############################################
 # Link properties
 ##############################################
-set(PROJ_LIBRARIES ${PROJ_CORE_TARGET} )
+set(PROJ_LIBRARIES proj )
 if(UNIX AND BUILD_LIBPROJ_SHARED)
     find_library(M_LIB m)
     if(M_LIB)
-      TARGET_LINK_LIBRARIES(${PROJ_CORE_TARGET} -lm)
+      TARGET_LINK_LIBRARIES(proj -lm)
     endif()
 endif(UNIX AND BUILD_LIBPROJ_SHARED)
-if(USE_THREAD AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT AND BUILD_LIBPROJ_SHARED)
-   TARGET_LINK_LIBRARIES(${PROJ_CORE_TARGET} ${CMAKE_THREAD_LIBS_INIT})
-endif(USE_THREAD AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT AND BUILD_LIBPROJ_SHARED)
+#if(USE_THREAD AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT AND BUILD_LIBPROJ_SHARED)
+#   TARGET_LINK_LIBRARIES(${PROJ_CORE_TARGET} ${CMAKE_THREAD_LIBS_INIT})
+#endif(USE_THREAD AND Threads_FOUND AND CMAKE_USE_PTHREADS_INIT AND BUILD_LIBPROJ_SHARED)
 
 
 ##############################################
 # install
 ##############################################
-install(TARGETS ${PROJ_CORE_TARGET}
-        EXPORT targets
-        RUNTIME DESTINATION ${BINDIR}
-        LIBRARY DESTINATION ${LIBDIR}
-        ARCHIVE DESTINATION ${LIBDIR}
-        FRAMEWORK DESTINATION ${FRAMEWORKDIR})
-
-if(NOT BUILD_FRAMEWORKS_AND_BUNDLE)
-  install(FILES ${ALL_LIBPROJ_HEADERS}
-        DESTINATION ${INCLUDEDIR})
-endif(NOT BUILD_FRAMEWORKS_AND_BUNDLE)
+#install(TARGETS ${PROJ_CORE_TARGET}
+#        EXPORT targets
+#        RUNTIME DESTINATION ${BINDIR}
+#        LIBRARY DESTINATION ${LIBDIR}
+#        ARCHIVE DESTINATION ${LIBDIR}
+#        FRAMEWORK DESTINATION ${FRAMEWORKDIR})
+#
+#if(NOT BUILD_FRAMEWORKS_AND_BUNDLE)
+#  install(FILES ${ALL_LIBPROJ_HEADERS}
+#        DESTINATION ${INCLUDEDIR})
+#endif(NOT BUILD_FRAMEWORKS_AND_BUNDLE)
 
 ##############################################
 # Core configuration summary
 ##############################################
-boost_report_value(PROJ_CORE_TARGET)
-boost_report_value(PROJ_CORE_TARGET_OUTPUT_NAME)
-boost_report_value(PROJ_LIBRARY_TYPE)
-boost_report_value(PROJ_LIBRARIES)
+#boost_report_value(PROJ_CORE_TARGET)
+#boost_report_value(PROJ_CORE_TARGET_OUTPUT_NAME)
+#boost_report_value(PROJ_LIBRARY_TYPE)
+#boost_report_value(PROJ_LIBRARIES)
 
-
+yong_install_header_files(proj4 "" ${ALL_LIBPROJ_HEADERS})
+yong_add_library_end(proj)
 
 
